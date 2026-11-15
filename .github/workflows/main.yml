@@ -1,0 +1,12 @@
+name: Legacy Notification Workflow (disabled)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  disabled:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disabled placeholder
+        run: echo "This legacy workflow is disabled. Use morning-notification.yml and daily-notification.yml instead."

@@ -1,0 +1,37 @@
+name: Push Notification on 3 categories
+
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "Select which notification you want to send"
+        required: true
+        type: choice
+        options:
+          - motivation_only
+          - reminders_only
+          - evening
+          - morning_both
+
+jobs:
+  manual-push-categories:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Target Push Notification
+        env:
+          TZ: "Asia/Kolkata"
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          NOTIFICATION_MODE: ${{ github.event.inputs.category == 'morning_both' && 'morning' || github.event.inputs.category }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/dailyPushNotification.js

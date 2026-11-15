@@ -1,0 +1,64 @@
+const fs = require("fs");
+
+const packageJson = {
+  name: "lights-main",
+  version: "1.0.0",
+  main: "index.js",
+  scripts: {
+    start: "expo start",
+    android: "expo run:android",
+    ios: "expo run:ios",
+    web: "expo start --web",
+  },
+  dependencies: {
+    "@expo/vector-icons": "^14.1.0",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/datetimepicker": "8.4.1",
+    "@react-native-picker/picker": "^2.11.1",
+    "@react-navigation/bottom-tabs": "^7.3.12",
+    "@react-navigation/native": "^7.1.14",
+    "@react-navigation/stack": "^7.4.2",
+    axios: "^1.10.0",
+    expo: "53.0.22",
+    "expo-auth-session": "~6.2.1",
+    "expo-av": "~15.1.7",
+    "expo-file-system": "~18.1.11",
+    "expo-font": "~13.3.2",
+    "expo-location": "^18.1.6",
+    "expo-print": "~14.1.4",
+    "expo-sharing": "~13.1.5",
+    "expo-status-bar": "~2.2.3",
+    "expo-web-browser": "~14.2.0",
+    "lottie-react-native": "7.2.2",
+    react: "19.0.0",
+    "react-native": "0.79.5",
+    "react-native-calendars": "^1.1312.0",
+    "react-native-chart-kit": "^6.12.0",
+    "react-native-event-listeners": "^1.0.7",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-svg": "15.11.2",
+    "react-native-swiper": "^1.6.0",
+  },
+  devDependencies: {
+    "@babel/core": "^7.20.0",
+    "@react-native-community/cli": "^19.1.0",
+  },
+  private: true,
+  expo: {
+    doctor: {
+      reactNativeDirectoryCheck: {
+        exclude: [
+          "react-native-chart-kit",
+          "react-native-event-listeners",
+          "react-native-swiper",
+        ],
+      },
+    },
+  },
+};
+
+fs.writeFileSync("package.json", JSON.stringify(packageJson, null, 2), "utf8");
+console.log("package.json created successfully");

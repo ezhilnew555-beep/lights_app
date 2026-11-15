@@ -1,0 +1,95 @@
+{
+  "expo": {
+    "name": "LigthsON",
+    "slug": "ligths",
+    "scheme": "ligths",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/brand/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/brand/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0C0B"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.subiksha17.ligths",
+      "icon": "./assets/brand/icon.png"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/adaptive-foreground.png",
+        "monochromeImage": "./assets/brand/adaptive-monochrome.png",
+        "backgroundColor": "#0A0C0B"
+      },
+      "package": "com.ligthsindia.ligthson",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/brand/favicon.png",
+      "name": "LigthsON",
+      "shortName": "LigthsON",
+      "backgroundColor": "#0A0C0B",
+      "themeColor": "#0A0C0B"
+    },
+    "extra": {
+      "googleExpoClientId": "127526920655-8uujrvt9ul3jnl36kadgurpegd1lj74p.apps.googleusercontent.com",
+      "googleIosClientId": "127526920655-vasj6bu62742mgdihjv9b2ospqtn89b5.apps.googleusercontent.com",
+      "googleAndroidClientId": "127526920655-kljosph2pjt31blojea2egji9shlm8vc.apps.googleusercontent.com",
+      "googleWebClientId": "127526920655-8uujrvt9ul3jnl36kadgurpegd1lj74p.apps.googleusercontent.com",
+      "eas": {
+        "projectId": "b8d6cbfa-980f-498a-950b-c183b8977b26"
+      }
+    },
+    "plugins": [
+      "expo-web-browser",
+      "expo-font",
+      "expo-asset",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow LigthsON to use Face ID to unlock the app."
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow LigthsON to access your microphone for voice-enabled transaction management."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/brand/notification-icon.png",
+          "color": "#C6F432"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0C0B",
+          "dark": {
+            "image": "./assets/brand/splash-icon.png",
+            "backgroundColor": "#0A0C0B"
+          }
+        }
+      ]
+    ],
+    "owner": "sandeepmareeswaran",
+    "backgroundColor": "#0A0C0B"
+  }
+}

@@ -1,0 +1,214 @@
+rules_version = '2';
+
+// LigthsON Firestore security rules.
+//
+// Principles:
+//  - Deny by default. Every collection the app uses is listed below; anything
+//    else is unreachable from clients.
+//  - A user can only ever touch documents under their own users/{uid}.
+//  - Coins, coin history, reward claims and badges are written only by Cloud
+//    Functions (Admin SDK bypasses these rules), never by the app.
+//  - Admins are users with a document at admins/{uid}, created from the
+//    Firebase console or scripts/securityMigration.js. Nobody can create one
+//    from a client.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function changedKeys() {
+      return incoming().diff(resource.data).affectedKeys();
+    }
+
+    function optString(field, max) {
+      return !(field in incoming())
+        || incoming()[field] == null
+        || (incoming()[field] is string && incoming()[field].size() <= max);
+    }
+
+    // Age fields arrive as numbers from sign-up and as text from the profile editor.
+    function optSmallNumberOrText(field) {
+      return !(field in incoming())
+        || incoming()[field] == null
+        || (incoming()[field] is number && incoming()[field] >= 0 && incoming()[field] <= 150)
+        || (incoming()[field] is string && incoming()[field].size() <= 3);
+    }
+
+    function validUserName(name) {
+      return name is string
+        && name.size() >= 3
+        && name.size() <= 40
+        && name == name.lower()
+        && name.matches('^[^/\\s]+$');
+    }
+
+    function validProfile() {
+      return optString('firstName', 60)
+        && optString('lastName', 60)
+        && optString('phoneNumber', 20)
+        && optString('country', 60)
+        && optString('pushToken', 300)
+        && optString('lastBreakoutUnlock', 40)
+        && optSmallNumberOrText('age')
+        && optSmallNumberOrText('retirementAge');
+    }
+
+    // Per-user financial records: bounded size, sane amount when present.
+    function validRecord() {
+      return incoming().keys().size() <= 60
+        && (!('amount' in incoming())
+            || (incoming().amount is number
+                && incoming().amount > -1000000000000
+                && incoming().amount < 1000000000000));
+    }
+
+    // ── Admins (managed outside the app) ────────────────────────────────
+
+    match /admins/{uid} {
+      allow get: if isOwner(uid);
+      allow list, write: if false;
+    }
+
+    // ── Username → uid index (unique usernames, no profile data) ────────
+
+    match /usernames/{name} {
+      // Public get lets sign-up check availability; it only reveals a uid.
+      allow get: if true;
+      allow list: if false;
+      // Created together with users/{uid} in one batch at sign-up.
+      allow create: if signedIn()
+        && validUserName(name)
+        && incoming().keys().hasOnly(['uid', 'createdAt'])
+        && incoming().uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.userName == name;
+      allow update, delete: if false;
+    }
+
+    // ── User profile ────────────────────────────────────────────────────
+
+    match /users/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isOwner(uid)
+        && incoming().keys().hasOnly([
+             'uid', 'email', 'firstName', 'lastName', 'userName', 'age',
+             'retirementAge', 'phoneNumber', 'country', 'pushToken', 'createdAt'
+           ])
+        && incoming().uid == uid
+        && incoming().email is string
+        && incoming().email.lower() == request.auth.token.email.lower()
+        && validUserName(incoming().userName)
+        && getAfter(/databases/$(database)/documents/usernames/$(incoming().userName)).data.uid == uid
+        && validProfile();
+
+      // coins, lastSeenDate, email, userName, uid and admin flags are not editable here.
+      allow update: if isOwner(uid)
+        && changedKeys().hasOnly([
+             'firstName', 'lastName', 'age', 'retirementAge', 'phoneNumber',
+             'country', 'pushToken', 'lastBreakoutUnlock', 'updatedAt'
+           ])
+        && validProfile();
+
+      allow delete: if false;
+
+      // Owner-managed records.
+      match /transactions/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid) && validRecord() && incoming().amount is number;
+        allow update: if isOwner(uid) && validRecord();
+      }
+
+      match /investments/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid) && validRecord() && incoming().amount is number;
+        allow update: if isOwner(uid) && validRecord();
+      }
+
+      match /goals/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validRecord();
+      }
+
+      match /stockPortfolio/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validRecord();
+      }
+
+      // Stocks the user plans to buy, one document per ticker.
+      match /watchlist/{symbol} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && incoming().keys().hasOnly([
+               'symbol', 'name', 'exchange', 'note', 'targetPrice',
+               'plannedQty', 'addedPrice', 'updatedAt'
+             ])
+          && incoming().symbol == symbol
+          && optString('name', 120)
+          && optString('exchange', 10)
+          && optString('note', 120);
+      }
+
+      // Server-managed, read-only for the owner.
+      match /coinHistory/{id} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if false;
+      }
+
+      match /badgeAwards/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /premiumRewardRedemptions/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /coinDaily/{day} {
+        allow read, write: if false;
+      }
+    }
+
+    // ── Premium reward claims (created by requestPremiumReward) ─────────
+
+    match /rewardClaims/{claimId} {
+      allow read: if signedIn()
+        && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    // ── Shared market data (written by server pipelines only) ───────────
+
+    // Breakout signals are a coin-gated feature: 10,000 coins, which only
+    // Cloud Functions can grant.
+    match /breakout_history/{id} {
+      allow read: if signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('coins', 0) >= 10000;
+      allow write: if false;
+    }
+
+    match /mutualFunds/{schemeCode} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+  }
+}

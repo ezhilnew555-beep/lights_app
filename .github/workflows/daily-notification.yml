@@ -1,0 +1,38 @@
+name: LigthsON Daily Notifications
+
+# ─── SCHEDULE ────────────────────────────────────────────────────
+# The 6:00 AM IST motivation quote and the 9:00 PM IST daily check are
+# scheduled on each phone by the app (src/services/dailyNotifications.js),
+# because GitHub runs scheduled workflows late or skips them under load.
+#
+# This job only sends due-date reminders (expenses, FD, RD, SIP), which need
+# server-side data. Times are UTC: 00:30 UTC = 06:00 AM IST.
+on:
+  schedule:
+    - cron: '30 0 * * *'    # 6:00 AM IST (GitHub may start it late)
+  workflow_dispatch:          # allow manual "Run workflow" from GitHub UI
+
+jobs:
+  send-notifications:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Due-Date Reminders
+        env:
+          TZ: "Asia/Kolkata"
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          NOTIFICATION_MODE: "reminders_only"
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/dailyPushNotification.js

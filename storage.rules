@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// LigthsON does not use Cloud Storage. Lock it completely so the default
+// bucket cannot be used to host or read files. If uploads are added later,
+// open only a per-user path, e.g. /users/{uid}/..., with size and type checks.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
